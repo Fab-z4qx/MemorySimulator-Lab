@@ -34,13 +34,13 @@ struct memory {
 
 void logs(char *msg){
     color("32");
-    printf("[LOG] %s",msg);
+    printf("[LOG] %s \n",msg);
     color("0");
 }
 
 void error(char *msg){
     color("31");
-    printf("[ERROR] %s", msg);
+    printf("[ERROR] %s \n", msg);
     color("0");
 }
 
@@ -95,19 +95,29 @@ void mem_free(memory *m){
         {
             m->list = m->list->next;
             free(curr);
-            curr = m->list->next;
+            curr = m->list;
         }
     }
     m->list = NULL;
 }
 
 void mem_display(memory *m){
-    printf(" Memory free : %d", m->free_size);
+    printf("\n Memory free : %d", m->free_size);
     
+    zone curr;
+    curr = m->list;
+    while(curr != NULL)
+    {
+        printf("\n Numero de zone : %d ",curr->addr);
+        printf("\n Taille de la zone : %d \n", curr->size);
+        curr = curr->next;
+    }
 }
 
 int mem_alloc(int size, memory *m){
     
+    
+    logs("Allocation");
     if(size > m->free_size){
         error("ALLOC SIZE IS TOO BIG");
         return 0;
@@ -117,7 +127,7 @@ int mem_alloc(int size, memory *m){
     switch(m->t){
         case FF: // 1er plus gros libre
             
-            if(m->free_size == max_memory_size) //No allocation in memory
+            if(m->free_size == m->size) //No allocation in memory
             {
                 zone z = malloc(sizeof(zone));
                 z->addr = 0;
@@ -125,20 +135,48 @@ int mem_alloc(int size, memory *m){
                 z->next = NULL;
                 m->list = z;
             }
-            
-            if(m->free_size < max_memory_size){ //Memory have allocations
+            else
+            { //Memory have allocations
+                int used_mem=0;
                 zone curr;
                 curr = m->list;
-                int busy_size = m->list->size;
-                if(size < m->list->next->addr - m->list->size)
+                
+                int alloc = 0;
+                while (alloc == 0)
                 {
-                    zone z = malloc(sizeof(zone));
-                    
-                    z->addr = m->list->size+1;
-                    z->size = size;
-                    z->next = m->list->next;
-                    
-                    m->list->next = z;
+                    if(curr->next == NULL && size <= m->free_size) //Si pas d'autre maillion que le 1er
+                    {
+                        logs("new maillons");
+                        zone z = malloc(sizeof(zone));
+                        
+                        z->addr = curr->size+1+used_mem;
+                        z->size = size;
+                        z->next = NULL;
+                        curr->next = z;
+                        alloc = 1;
+                    }
+                    else if(alloc == 0) //il y'a déja des maillions
+                    {
+                        if( (curr->next->addr - curr->size  ) >= size )//On regarde la taille dispo entre les deux maillons
+                        { //si elle est suffisante
+                            
+                            logs("Nouveau maillion");
+                            zone z = malloc(sizeof(zone));
+                            
+                            z->addr = curr->size+1+used_mem;
+                            z->size = size;
+                            z->next = NULL;
+                            
+                            curr->next = z;
+                            alloc = 1;
+                        }
+                        else //Sinon la taille n'est pas suffisante il faut parcourir la liste
+                        {
+                            logs("Next maillon");
+                            curr = curr->next;
+                            used_mem = used_mem + curr->size;
+                        }
+                    }
                 }
             }
             m->free_size = m->free_size - size;
@@ -157,17 +195,40 @@ int mem_alloc(int size, memory *m){
     return 1;
 }
 
+int lenght_to_add(int addr, memory *m){
+    int search_size = 0;
+    
+    zone curr;
+    curr = m->list;
+    while( curr->addr != addr || curr == NULL)
+    {
+        search_size = search_size + curr->size;
+        curr = curr->next;
+    }
+    return search_size;
+}
+
 int mem_dfrag();
 
 int main(int argc, const char * argv[]) {
     //Create memory zone
-    int mem_size = 50;
-    memory *m = mem_init(mem_size, FF);
-    
+    memory *m = mem_init(max_memory_size, FF);
+
     
     //Memory allocation
     mem_alloc(10, m);
+   // mem_display(m);
     
+    mem_alloc(50,m);
+    //mem_display(m);
+    
+    mem_alloc(15,m);
+   // mem_display(m);
+    
+    mem_alloc(30,m);
+    //mem_display(m);
+    
+    mem_alloc(100,m);
     mem_display(m);
     
     return 0;
