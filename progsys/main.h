@@ -16,32 +16,35 @@
 #define color(param) printf("\033[%sm",param)
 
 enum TYPE {FF,BF,WF};
-enum {ALLOCATE, FREE, FREESELECT, VIEW,QUIT};
+enum {ALLOCATE, FREESELECT, FREE, VIEW, QUIT};
 
 typedef struct zone_mem zmem;
 struct zone_mem {
-    int addr;
-    int size;
-    zmem *next;
+    int   addr;
+    int   size;
+    zmem  *next;
 };
 
 typedef zmem* zone;
 
 typedef struct memory memory;
 struct memory {
-    enum TYPE t;
-    int size;
-    int free_size;
-    zone list;
+    enum  TYPE t;
+    int   size;
+    int   free_size;
+    zone  list;
 };
 
+/***** logs function *****/
 void logs(char *msg);
 void error(char *msg);
 
+/***** Memory action *****/
 memory* mem_init(int size, enum TYPE t);
-void mem_free(memory *m);
-void mem_display(memory *m);
-int mem_alloc(int size, memory *m);
-int mem_dfrag();
+int     mem_free(memory *m);
+int     mem_free_select(memory *m, int addr);
+void    mem_display(memory *m);
+int     mem_alloc(memory *m,int size);
+int     mem_dfrag();
 
 #endif

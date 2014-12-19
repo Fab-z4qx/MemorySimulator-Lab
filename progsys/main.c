@@ -59,9 +59,10 @@ memory* mem_init(int size, enum TYPE t){
     return m;
 }
 
-void mem_free(memory *m){
+int mem_free(memory *m){
     if(m == NULL){
-        error("NO MEMORY ALLOCATED - Memory Is NULL");
+        error("Memory Probleme, memory is realy allocated ?");
+        return -1;
     }
     else
     {
@@ -75,6 +76,58 @@ void mem_free(memory *m){
         }
     }
     m->list = NULL;
+    m->free_size = max_memory_size;
+    
+    return 0;
+}
+
+int mem_free_select(memory *m, int addr){
+    
+    logs("Mem_free_select");
+    if(m == NULL){
+        error("Memory Probleme, memory is realy allocated ?");
+        return -1;
+    }
+    
+    if(addr < 0){
+        error("Addr is not valid");
+        return -1;
+    }
+    
+    zone curr,tmp = NULL;
+    int desalloc = 0;
+    curr = m->list;
+    
+    while(curr != NULL && desalloc == 0)
+    {
+        if(addr == 0){
+            m->list = curr->next;
+            m->free_size = m->free_size+curr->size;
+            
+            free(curr);
+            desalloc=1;
+        }
+        if(curr->next == NULL && desalloc == 0){
+            error("Segment of memory not found");
+            return -1;
+        }
+        if(curr->next->addr == addr && desalloc == 0)
+        {
+            tmp = curr->next;
+            curr->next = curr->next->next;
+            m->free_size = m->free_size+tmp->size;
+            
+            free(tmp);
+            desalloc = 1;
+        }
+        curr = curr->next;
+    }
+    
+    if(desalloc==0){
+        return -1;
+    }
+    else
+        return 0;
 }
 
 void mem_display(memory *m){
@@ -90,8 +143,7 @@ void mem_display(memory *m){
     }
 }
 
-int mem_alloc(int size, memory *m){
-    
+int mem_alloc(memory *m, int size){
     
     logs("Allocation");
     
@@ -117,16 +169,16 @@ int mem_alloc(int size, memory *m){
             }
             else
             { //Memory have allocations
-                int used_mem=0;
                 zone curr;
                 curr = m->list;
                 
                 int alloc = 0;
                 while (alloc == 0)
                 {
+                    printf("maillion acctuel : %d \n", curr->addr);
                     if(curr->next == NULL && size <= m->free_size) //Si pas d'autre maillion que le 1er
                     {
-                        logs("new maillons");
+                        printf("new maillons à la position : %d \n", curr->addr);
                         zone z = malloc(sizeof(zone));
                         
                         z->addr = curr->addr+curr->size+1;
@@ -135,24 +187,28 @@ int mem_alloc(int size, memory *m){
                         curr->next = z;
                         alloc = 1;
                     }
-                    else if(alloc == 0) //il y'a déja des maillions
+                    else if(curr->next != NULL && alloc == 0) //There is already memory zone allocated
                     {
-                        if( ((curr->addr + curr->size) - curr->next->addr) >= size )//On regarde la taille dispo entre les deux maillons
+                        logs("Test");
+                        printf("\ncurr add : %d, curr size : %d\n, next addr:%d, size :%d\n",curr->addr, curr->size, curr->next->addr, size);
+                        
+                        
+                        if( size <= (curr->next->addr - (curr->addr + curr->size)) )//On regarde la taille dispo entre les deux maillons
                         { //si elle est suffisante
                             
-                            logs("Nouveau maillion");
+                            printf("Ajout d'un maillion à la position : %d \n", curr->addr);
                             zone z = malloc(sizeof(zone));
                             
                             z->addr = curr->addr+curr->size+1;
                             z->size = size;
-                            z->next = NULL;
+                            z->next = curr->next;
                             
                             curr->next = z;
                             alloc = 1;
                         }
                         else //Sinon la taille n'est pas suffisante il faut parcourir la liste
                         {
-                            logs("Next maillon");
+                            logs("Next maillon \n");
                             curr = curr->next;
                         }
                     }
@@ -174,35 +230,17 @@ int mem_alloc(int size, memory *m){
     return 1;
 }
 
-int mem_dfrag();
-
 int main(int argc, const char * argv[]) {
     //Create memory zone
     memory *m = mem_init(max_memory_size, FF);
     
-    //Memory allocation
-    mem_alloc(10, m);
-   // mem_display(m);
-    
-    mem_alloc(50,m);
-    //mem_display(m);
-    
-    mem_alloc(15,m);
-   // mem_display(m);
-    
-    mem_alloc(30,m);
-    //mem_display(m);
-    
-    mem_alloc(100,m);
-    mem_display(m);
-    
     int choice;
-    
+    int size,id;
      do{
-         printf("What do you want to do ?\n");
+         printf("\n\nWhat do you want to do ?\n");
          printf("[0] Allocation\n");
-         printf("[1] Free Memory\n");
-         printf("[2] Free Selected Memory\n");
+         printf("[1] Free Selected Memory\n");
+         printf("[2] Free All Memory\n");
          printf("[3] View Memory\n");
          printf("[4] Quit\n");
 
@@ -210,18 +248,28 @@ int main(int argc, const char * argv[]) {
          
          switch(choice){
              case ALLOCATE:
-                 break;
-             case FREE:
+                 printf("What is the size of the allocation ? : ");
+                 scanf("%d",&size);
+                 mem_alloc(m,size);
+                 size = 0;
                  break;
              case FREESELECT:
+                 printf("What is id of allocation ? : ");
+                 scanf("%d",&id);
+                 mem_free_select(m,id);
+                 id=0;
+                 break;
+             case FREE:
+                 mem_free(m);
                  break;
              case VIEW:
+                 mem_display(m);
                  break;
              case QUIT:
+                 mem_free(m);
                  break;
          }
      }while(choice !=QUIT);
-     
     
     return 0;
 }
