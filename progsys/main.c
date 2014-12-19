@@ -130,17 +130,106 @@ int mem_free_select(memory *m, int addr){
         return 0;
 }
 
+int rand_a_b(int a, int b){
+    return rand()%(b-a) +a;
+}
+
+int* init_sans_doublons(int a, int b){
+    int taille = b-a;
+    int* resultat=malloc((taille)*sizeof (int));
+    int i=0;
+    
+    // On remplit le tableau de manière à ce qu'il soit trié
+    for(i = 0; i< taille; i++){
+        resultat[i]=i+a;
+    }
+    return resultat;
+}
+
+void melanger(int* tableau, int taille){
+    int i=0;
+    int nombre_tire=0;
+    int temp=0;
+    
+    for(i = 0; i< taille;i++){
+        nombre_tire=rand_a_b(0,taille);
+        // On échange les contenus des cases i et nombre_tire
+        temp = tableau[i];
+        tableau[i] = tableau[nombre_tire];
+        tableau[nombre_tire]=temp;
+    }
+}
+
 void mem_display(memory *m){
     printf("\n Memory free : %d", m->free_size);
     
+    int i=0, a=31,b=37;
+    int *t=NULL;
+    
     zone curr;
     curr = m->list;
+    
+    t=init_sans_doublons(a,b);
+    melanger(t,b-a);
+    
+    char colo[3];
+    printf("\n\n");
     while(curr != NULL)
     {
-        printf("\n Numero de zone : %d ",curr->addr);
-        printf("\n Taille de la zone : %d \n", curr->size);
+        sprintf(colo,"%d",t[i]);
+        color(colo);
+        printBlockOfMemory(curr,0,0);
+    //    printf("\n Numero de zone : %d ",curr->addr);
+    //    printf("\n Taille de la zone : %d \n", curr->size);
         curr = curr->next;
+        i++;
     }
+    printf("||\n\n");
+    color("0");
+}
+
+void printToCoordinates(int x, int y, char *text)
+{
+    printf("\033[%d;%dH%s\n", x, x, text);
+}
+
+int printBlockOfMemory(zone m, int x, int y)
+{
+    if(m == NULL)
+    {
+        return -1;
+    }
+    
+    int size_x,size_y;
+    
+    struct winsize w;
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+    
+    size_x = w.ws_col;
+    size_y = w.ws_row;
+
+    float pourcentage = 0;
+    if(size_x != 0)
+    {
+        pourcentage = (m->size * size_x)/max_memory_size;
+    }
+    
+    pourcentage = (int)pourcentage;
+    char *space = malloc( 1+sizeof(char)*pourcentage) ;
+    if(pourcentage > 5)
+    {
+        for (int i=0;i<(pourcentage-10)/2;i++){
+            space[i] = '*';
+        }
+    }
+    else space[0] = '*';
+
+    char *buffer = malloc( sizeof(char) * pourcentage+40);
+    sprintf(buffer, "|%s @%d/%d %s|--->", space, m->addr,m->size, space);
+    printf("%s",buffer);
+    //printf("buffer");
+    
+    return 0;
 }
 
 int mem_alloc(memory *m, int size){
@@ -161,6 +250,10 @@ int mem_alloc(memory *m, int size){
             
             if(m->free_size == m->size) //No allocation in memory
             {
+                color("32");
+                printf("Creation d'une zone memoire à la position : %d \n", m->list->addr+m->list->size+1);
+                printf("Avec la taille de %d\n", size);
+                color("0");
                 zone z = malloc(sizeof(zone));
                 z->addr = 0;
                 z->size = size;
@@ -175,10 +268,13 @@ int mem_alloc(memory *m, int size){
                 int alloc = 0;
                 while (alloc == 0)
                 {
-                    printf("maillion acctuel : %d \n", curr->addr);
+                   
                     if(curr->next == NULL && size <= m->free_size) //Si pas d'autre maillion que le 1er
                     {
-                        printf("new maillons à la position : %d \n", curr->addr);
+                        color("32");
+                        printf("Creation d'une zone memoire à la position : %d \n", curr->addr+curr->size+1);
+                        printf("\nAvec la taille de %d", size);
+                        color("0");
                         zone z = malloc(sizeof(zone));
                         
                         z->addr = curr->addr+curr->size+1;
@@ -189,14 +285,17 @@ int mem_alloc(memory *m, int size){
                     }
                     else if(curr->next != NULL && alloc == 0) //There is already memory zone allocated
                     {
-                        logs("Test");
-                        printf("\ncurr add : %d, curr size : %d\n, next addr:%d, size :%d\n",curr->addr, curr->size, curr->next->addr, size);
+                        //logs("Test");
+                        //printf("\ncurr add : %d, curr size : %d\n, next addr:%d, size :%d\n",curr->addr, curr->size, curr->next->addr, size);
                         
                         
                         if( size <= (curr->next->addr - (curr->addr + curr->size)) )//On regarde la taille dispo entre les deux maillons
                         { //si elle est suffisante
                             
-                            printf("Ajout d'un maillion à la position : %d \n", curr->addr);
+                            color("32");
+                            printf("Creation d'une zone memoire à la position : %d", curr->addr+curr->size+1);
+                            printf("Avec la taille de %d", curr->size);
+                            color("0");
                             zone z = malloc(sizeof(zone));
                             
                             z->addr = curr->addr+curr->size+1;
@@ -208,7 +307,7 @@ int mem_alloc(memory *m, int size){
                         }
                         else //Sinon la taille n'est pas suffisante il faut parcourir la liste
                         {
-                            logs("Next maillon \n");
+                            //logs("Next maillon \n");
                             curr = curr->next;
                         }
                     }
@@ -231,7 +330,10 @@ int mem_alloc(memory *m, int size){
 }
 
 int main(int argc, const char * argv[]) {
+    //srand(time(NULL));
     //Create memory zone
+    
+   // printToCoordinates(20,50,"SALUT");
     memory *m = mem_init(max_memory_size, FF);
     
     int choice;
