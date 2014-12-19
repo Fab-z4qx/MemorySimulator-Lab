@@ -2,35 +2,11 @@
 //  main.c
 //  progsys
 //
-//  Created by Fabien on 17/12/2014.
+//  Created by Fabimainen on 17/12/2014.
 //  Copyright (c) 2014 ___EFREI-GENET-ROBERT___. All rights reserved.
 //
 
-#include <stdio.h>
-#include <stdlib.h>
-
-
-#define max_memory_size 5000
-#define color(param) printf("\033[%sm",param)
-
-enum TYPE {FF,BF,WF};
-
-typedef struct zone_mem zmem;
-struct zone_mem {
-    int addr;
-    int size;
-    zmem *next;
-};
-
-typedef zmem* zone;
-
-typedef struct memory memory;
-struct memory {
-    enum TYPE t;
-    int size;
-    int free_size;
-    zone list;
-};
+#include "main.h"
 
 void logs(char *msg){
     color("32");
@@ -118,11 +94,15 @@ int mem_alloc(int size, memory *m){
     
     
     logs("Allocation");
+    
+    if(size <= 0 ){
+        error("Bad size");
+        return -1;
+    }
     if(size > m->free_size){
         error("ALLOC SIZE IS TOO BIG");
-        return 0;
+        return -1;
     }
-    
     
     switch(m->t){
         case FF: // 1er plus gros libre
@@ -149,7 +129,7 @@ int mem_alloc(int size, memory *m){
                         logs("new maillons");
                         zone z = malloc(sizeof(zone));
                         
-                        z->addr = curr->size+1+used_mem;
+                        z->addr = curr->addr+curr->size+1;
                         z->size = size;
                         z->next = NULL;
                         curr->next = z;
@@ -157,13 +137,13 @@ int mem_alloc(int size, memory *m){
                     }
                     else if(alloc == 0) //il y'a déja des maillions
                     {
-                        if( (curr->next->addr - curr->size  ) >= size )//On regarde la taille dispo entre les deux maillons
+                        if( ((curr->addr + curr->size) - curr->next->addr) >= size )//On regarde la taille dispo entre les deux maillons
                         { //si elle est suffisante
                             
                             logs("Nouveau maillion");
                             zone z = malloc(sizeof(zone));
                             
-                            z->addr = curr->size+1+used_mem;
+                            z->addr = curr->addr+curr->size+1;
                             z->size = size;
                             z->next = NULL;
                             
@@ -174,7 +154,6 @@ int mem_alloc(int size, memory *m){
                         {
                             logs("Next maillon");
                             curr = curr->next;
-                            used_mem = used_mem + curr->size;
                         }
                     }
                 }
@@ -195,25 +174,11 @@ int mem_alloc(int size, memory *m){
     return 1;
 }
 
-int lenght_to_add(int addr, memory *m){
-    int search_size = 0;
-    
-    zone curr;
-    curr = m->list;
-    while( curr->addr != addr || curr == NULL)
-    {
-        search_size = search_size + curr->size;
-        curr = curr->next;
-    }
-    return search_size;
-}
-
 int mem_dfrag();
 
 int main(int argc, const char * argv[]) {
     //Create memory zone
     memory *m = mem_init(max_memory_size, FF);
-
     
     //Memory allocation
     mem_alloc(10, m);
@@ -230,6 +195,33 @@ int main(int argc, const char * argv[]) {
     
     mem_alloc(100,m);
     mem_display(m);
+    
+    int choice;
+    
+     do{
+         printf("What do you want to do ?\n");
+         printf("[0] Allocation\n");
+         printf("[1] Free Memory\n");
+         printf("[2] Free Selected Memory\n");
+         printf("[3] View Memory\n");
+         printf("[4] Quit\n");
+
+         scanf("%d",&choice);
+         
+         switch(choice){
+             case ALLOCATE:
+                 break;
+             case FREE:
+                 break;
+             case FREESELECT:
+                 break;
+             case VIEW:
+                 break;
+             case QUIT:
+                 break;
+         }
+     }while(choice !=QUIT);
+     
     
     return 0;
 }

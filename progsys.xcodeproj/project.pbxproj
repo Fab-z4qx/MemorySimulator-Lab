@@ -26,6 +26,7 @@
 		7D4DC0411A42342500DBAF8C /* progsys */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = progsys; sourceTree = BUILT_PRODUCTS_DIR; };
 		7D4DC0441A42342500DBAF8C /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		7D4DC04B1A4234ED00DBAF8C /* GESTION_MEMOIRE.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; name = GESTION_MEMOIRE.pdf; path = ../GESTION_MEMOIRE.pdf; sourceTree = "<group>"; };
+		7D4DC04D1A44255700DBAF8C /* main.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = main.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -60,6 +61,7 @@
 			isa = PBXGroup;
 			children = (
 				7D4DC0441A42342500DBAF8C /* main.c */,
+				7D4DC04D1A44255700DBAF8C /* main.h */,
 			);
 			path = progsys;
 			sourceTree = "<group>";
