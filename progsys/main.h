@@ -16,11 +16,12 @@
 #include <string.h>
 #include <time.h>
 
+
 #define max_memory_size 5000
 #define color(param) printf("\033[%sm",param)
 
 enum TYPE {FF,BF,WF};
-enum {ALLOCATE, FREESELECT, FREE, VIEW, QUIT};
+enum {ALLOCATE, FREESELECT, FREE, VIEW, FRAG, DEFRAG, QUIT};
 
 typedef struct zone_mem zmem;
 struct zone_mem {
@@ -40,16 +41,17 @@ struct memory {
 };
 
 /****** Utils ******/
-void printToCoordinates(int x, int y, char *text);
-int printBlockOfMemory(zone m, int x, int y);
-void melanger(int* tableau, int taille);
-int* init_sans_doublons(int a, int b);
-int rand_a_b(int a, int b);
+void    print_to_coordinates(int x, int y, char *text);
+int     print_block_of_memory(zone m);
+void    melanger(int* tableau, int taille);
+int*    init_sans_doublons(int a, int b);
+int     rand_a_b(int a, int b);
+void    print_block_of_free_memory(zone curr);
 
 
 /****** logs function ******/
-void logs(char *msg);
-void error(char *msg);
+void    logs(char *msg);
+void    error(char *msg);
 
 /****** Memory action ******/
 memory* mem_init(int size, enum TYPE t);
@@ -57,6 +59,10 @@ int     mem_free(memory *m);
 int     mem_free_select(memory *m, int addr);
 void    mem_display(memory *m);
 int     mem_alloc(memory *m,int size);
-int     mem_dfrag();
+int     mem_dfrag(memory *m);
+int     mem_check(memory *m);
+int     mem_frag_simulation(memory *m);
+int     memory_is_frag(memory *m);
+int     mem_alloc_ff(memory *m, int size);
 
 #endif
