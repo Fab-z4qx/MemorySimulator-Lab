@@ -108,16 +108,15 @@ int mem_free_select(memory *m, int addr){
         if(addr == 0){ //IF first memory zone
             m->free_size = m->free_size + m->list->size;
             m->list = curr->next;
-            
             free(curr);
             desalloc=1;
         }
         if(curr->next == NULL && desalloc == 0){
-            error("Segment of memory not found");
+            error("Segment of memory not found : ");
+            printf("%d\n", addr);
             return -1;
         }
-        if(curr->next->addr == addr && desalloc == 0)
-        {
+        if(curr->next->addr == addr && desalloc == 0){
             tmp = curr->next;
             curr->next = curr->next->next;
             m->free_size = m->free_size+ tmp->size;
@@ -128,9 +127,8 @@ int mem_free_select(memory *m, int addr){
         curr = curr->next;
     }
     
-    if(desalloc==0){
+    if(desalloc==0)
         return -1;
-    }
     else
         return 0;
 }
@@ -170,7 +168,7 @@ void melanger(int* tableau, int taille){
 void mem_display(memory *m){
     printf("\n Memory free : %d", m->free_size);
     
-    int i=0, a=31,b=37;
+    int i=0, a=31,b=37; // a et b pour les couleurs shell unix
     int *t=NULL;
     
     zone curr;
@@ -186,26 +184,20 @@ void mem_display(memory *m){
         if(i==b-a) i=0;
         sprintf(colo,"%d",t[i]);
         color(colo);
-        /* Test if there is Free block and display it */
-        /* Calculer la taille entre les deux bloc */
-        /* Afficher cette zone vide */
+    
         print_block_of_memory(curr);
         
         int size_of_free_memory=0;
         if(curr->next != NULL)
         {
             size_of_free_memory = (curr->next->addr - (curr->addr + curr->size)) ;
-            
-            //printf("size of mem : %d\n", size_of_free_memory);
             if(size_of_free_memory > 1)
             {
                 color("0");
-                char *buffer = malloc( sizeof(char) * 500);
-                sprintf(buffer, "<@%d/%d>--->", curr->addr+curr->size+1,size_of_free_memory-1);
-                printf("%s",buffer);
+                print_block_of_free_memory(curr, size_of_free_memory);
                 color(colo);
             }
-            //print_block_of_free_memory(curr);
+          
         }
     //    printf("\n Numero de zone : %d ",curr->addr);
     //    printf("\n Taille de la zone : %d \n", curr->size);
@@ -216,6 +208,22 @@ void mem_display(memory *m){
     color("0");
 }
 
+int print_block_of_free_memory(zone curr, int size_of_free_memory){
+    
+    if(curr == NULL)
+    {
+        error("Block of memory doesn't exist");
+        return -1;
+    }
+    
+    char *buffer = malloc( sizeof(char) * 500);
+    sprintf(buffer, "<@%d/%d>--->", curr->addr+ curr->size+1,size_of_free_memory-1);
+    printf("%s",buffer);
+    
+    return 0;
+}
+
+
 void print_to_coordinates(int x, int y, char *text)
 {
     printf("\033[%d;%dH%s\n", x, x, text);
@@ -225,6 +233,7 @@ int print_block_of_memory(zone m)
 {
     if(m == NULL)
     {
+        error("Memory is empty");
         return -1;
     }
     
@@ -336,13 +345,13 @@ int mem_alloc_ff(memory *m, int size){
                 }
             }
             if(curr->next == NULL && alloc ==0){
-                error("Bad allocation");
+                error("Allocation impossible en fin de chaine (memoire insufisante)");
                 return -1;
             }
             curr = curr->next;
         }
         if(alloc == 0){
-            error("Bad allocation");
+            error("Allocation impossible");
             return -1;
         }
     }
@@ -361,7 +370,7 @@ int mem_alloc(memory *m, int size){
     }
     
     if(size <= 0 || size > m->free_size){
-        error("Bad size");
+        error("SIZE IS TOO SMALL");
         return -1;
     }
     if(size > m->free_size){
@@ -393,7 +402,7 @@ int mem_defrag(memory *m){
     }
 
     
-    logs("Mem defrag");
+    logs("Memory defragmentation");
    // int nb_of_block =0;
 
     /*while (curr != NULL) {
@@ -415,12 +424,11 @@ int mem_defrag(memory *m){
     curr = m->list;
     while( memory_is_frag(m) == 1)
     {
-        //logs("test");
         int size_of_free_memory=0;
-        if(curr == NULL){
+        if(curr == NULL){ // Si la zone est nul on recommence au début
             curr = m->list;
         }
-        //sleep(1);
+        
         if(curr->next != NULL)
         {
             size_of_free_memory = (curr->next->addr - (curr->addr + curr->size)) ;
@@ -430,7 +438,6 @@ int mem_defrag(memory *m){
                 zone curr2 = curr;
                 while(curr2 !=NULL)
                 {
-                  //  logs("test2");
                     if(curr2->next != NULL)
                         curr2->next->addr = curr2->next->addr - size_of_free_memory;
                     else
@@ -445,7 +452,6 @@ int mem_defrag(memory *m){
        
     }
 
-    
     return 0;
 }
 
@@ -458,8 +464,9 @@ int memory_is_frag(memory *m){
         error("Memory is initialised?");
         return -1;
     }
-    //logs("Check if memory is fragmented");
     
+    
+    logs("Check if memory is fragmented");
     zone curr;
     curr = m->list;
     int size_of_free_memory=0;
@@ -480,6 +487,7 @@ int memory_is_frag(memory *m){
     return 0;
 }
 
+/* Simulation of memory fragmentation */
 int mem_frag_simulation(memory *m){
     if(m == NULL){
         error("Memory is initialised?");
@@ -490,7 +498,7 @@ int mem_frag_simulation(memory *m){
     {
         int nb =50;
         int nb_of_dealloc = 10;
-        int a=10, b=(max_memory_size/8);
+        int a=10, b=(m->size/8); //Taille compris entre a et b
         int *t=init_sans_doublons(a,b);
         melanger(t,b-a);
         
@@ -507,11 +515,13 @@ int mem_frag_simulation(memory *m){
             }
         }
         mem_display(m);
-
+        
+        //Debug
         for(int i=0;i<j;i++){
             printf("| %d / @%d ",i,addr_of_alloc[i]);
         }
         
+        /* desalocation */
         for(int i=0;i<nb_of_dealloc;i++){
             x = rand_a_b(0, j);
             mem_free_select(m, addr_of_alloc[x]);
@@ -520,27 +530,13 @@ int mem_frag_simulation(memory *m){
     }
     
     return 0;
-    
-}
-
-
-int mem_check(memory *m){
-    if(m == NULL){
-        error("Memory is initialised?");
-        return -1;
-    }
-
-    return 1;
 }
 
 int main(int argc, const char * argv[]) {
-    srand(time(NULL));
+    srand((int)time(NULL));
     //Create memory zone
-    
-   // printToCoordinates(20,50,"SALUT");
     memory *m = mem_init(max_memory_size, FF);
     
-    //mem_frag_simulation(m);
     
     int choice;
     int size,id;

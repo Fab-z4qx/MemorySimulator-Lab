@@ -46,7 +46,7 @@ int     print_block_of_memory(zone m);
 void    melanger(int* tableau, int taille);
 int*    init_sans_doublons(int a, int b);
 int     rand_a_b(int a, int b);
-void    print_block_of_free_memory(zone curr);
+int     print_block_of_free_memory(zone curr, int size_of_free_memory);
 
 
 /****** logs function ******/
@@ -60,7 +60,6 @@ int     mem_free_select(memory *m, int addr);
 void    mem_display(memory *m);
 int     mem_alloc(memory *m,int size);
 int     mem_dfrag(memory *m);
-int     mem_check(memory *m);
 int     mem_frag_simulation(memory *m);
 int     memory_is_frag(memory *m);
 int     mem_alloc_ff(memory *m, int size);
