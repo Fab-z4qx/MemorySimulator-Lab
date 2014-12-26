@@ -40,28 +40,32 @@ struct memory {
     zone  list;
 };
 
-/****** Utils ******/
-void    print_to_coordinates(int x, int y, char *text);
-int     print_block_of_memory(zone m);
-void    melanger(int* tableau, int taille);
-int*    init_sans_doublons(int a, int b);
-int     rand_a_b(int a, int b);
-int     print_block_of_free_memory(zone curr, int size_of_free_memory);
-
-
 /****** logs function ******/
 void    logs(char *msg);
 void    error(char *msg);
+
+/****** Utils ******/
+int     rand_a_b(int a, int b);
+int*    init_sans_doublons(int a, int b);
+void    melanger(int* tableau, int taille);
 
 /****** Memory action ******/
 memory* mem_init(int size, enum TYPE t);
 int     mem_free(memory *m);
 int     mem_free_select(memory *m, int addr);
-void    mem_display(memory *m);
+int     mem_display(const memory *m);
 int     mem_alloc(memory *m,int size);
 int     mem_dfrag(memory *m);
 int     mem_frag_simulation(memory *m);
-int     memory_is_frag(memory *m);
+int     memory_is_frag(const memory *m);
 int     mem_alloc_ff(memory *m, int size);
+
+/****** Printing function *****/
+void    print_to_coordinates(int x, int y, char *text);
+int     print_block_of_free_memory(const zone curr, int size_of_free_memory);
+int     print_block_of_memory(const zone m);
+
+
+
 
 #endif
