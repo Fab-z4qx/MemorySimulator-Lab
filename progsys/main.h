@@ -59,6 +59,9 @@ int     mem_dfrag(memory *m);
 int     mem_frag_simulation(memory *m);
 int     memory_is_frag(const memory *m);
 int     mem_alloc_ff(memory *m, int size);
+int     mem_alloc_bf(memory *m, int size);
+int     mem_alloc_wf(memory *m, int size);
+int     number_of_fragment(const memory *m);
 
 /****** Printing function *****/
 void    print_to_coordinates(int x, int y, char *text);

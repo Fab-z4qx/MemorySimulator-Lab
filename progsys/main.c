@@ -105,7 +105,6 @@ int print_block_of_memory(const zone m)
         space[0] = '*';
     
     char *buffer = malloc( sizeof(char) * pourcentage+40);
-    // Debug version sprintf(buffer, "|%s@%d/%d/%d%s|--->", space, m->addr,m->addr+m->size-1,m->size,space);
     sprintf(buffer, "|%s@%d/%d%s|--->", space, m->addr,m->size,space);
     printf("%s",buffer);
     
@@ -274,15 +273,14 @@ int mem_display(const memory *m){
         else //fin de chaine
         {
             color("0");
-            print_block_of_free_memory(curr, (m->size - (curr->addr+curr->size))); // -2 due to address translation
-            //color(colo);
+            print_block_of_free_memory(curr, (m->size - (curr->addr+curr->size)));
         }
-    //    printf("\n Numero de zone : %d ",curr->addr);
-    //    printf("\n Taille de la zone : %d \n", curr->size);
         curr = curr->next;
         i++;
     }
     printf("### \n\n");
+    printf("Number of fragment in memory : %d", number_of_fragment(m));
+    
     color("0");
     
     return 0;
@@ -291,12 +289,12 @@ int mem_display(const memory *m){
 
 
 int mem_alloc_ff(memory *m, int size){
+    logs("FF Allocation");
     
     int addr_of_alloc = -1;
     int more_2_of_alloc = 0;
     if(m->free_size == m->size) //No allocation in memory
     {
-        logs("Alloc");
         color("32");
         printf("Creation d'une zone memoire à la position : %d \n", m->list->addr+m->list->size);
         printf("Avec la taille de %d\n", size);
@@ -318,17 +316,11 @@ int mem_alloc_ff(memory *m, int size){
         int alloc = 0;
         while (alloc == 0)
         {
-            
-            // (m->size - (curr->addr+curr->size)) > size -> Si la taille entre le dernier maillon et la fin est > size
             if(curr->next != NULL && alloc == 0) //There is already memory zone allocated -> Allocation entre 2 maillions
             {
-                //logs("Test");
-                //printf("\ncurr add : %d, curr size : %d\n, next addr:%d, size :%d\n",curr->addr, curr->size, curr->next->addr, size);
-                // 5°
                 if( size <= (curr->next->addr - (curr->addr + curr->size)) )//On regarde la taille dispo entre les deux maillons
                 { //si elle est suffisante
                     
-                    logs("Alloc 1");
                     color("32");
                     printf("Creation d'une zone memoire à la position : %d \n", curr->addr+curr->size+1);
                     printf("Avec la taille de %d \n", curr->size);
@@ -349,8 +341,6 @@ int mem_alloc_ff(memory *m, int size){
             }
             if(curr->next == NULL && size <= m->free_size && alloc == 0 ) //Dernier maillon
             {
-                logs("alloc2");
-                // 5000 - ( 4200 + 200) = 600
                 if(size <= (m->size - (curr->addr + curr->size)))
                 {
                     color("32");
@@ -385,12 +375,248 @@ int mem_alloc_ff(memory *m, int size){
     return addr_of_alloc;
 }
 
+
+int mem_alloc_bf(memory *m, int size){
+    logs("BF Allocation");
+    
+    int addr_of_alloc = -1;
+    int more_2_of_alloc = 0;
+    int is_frag = memory_is_frag(m);
+
+    if(m->free_size == m->size) //No allocation in memory
+    {
+        color("32");
+        printf("Creation d'une zone memoire à la position : %d \n", m->list->addr+m->list->size);
+        printf("Avec la taille de %d\n", size);
+        color("0");
+        zone z = malloc(sizeof(zone));
+        z->addr = 0;
+        z->size = size;
+        z->next = NULL;
+        m->list = z;
+        addr_of_alloc = z->addr;
+        
+        m->free_size = m->free_size - size; //Update of free size
+        return addr_of_alloc;
+    }
+    else
+    { //Memory have allocations
+        zone curr;
+        curr = m->list;
+        int alloc = 0;
+        while (alloc == 0)
+        {
+            if(curr->next != NULL && alloc == 0) //There is already memory zone allocated -> Allocation entre 2 maillions
+            {
+                if(is_frag == 1)
+                {
+                    int size_of_best_segement=-1;
+                    int size_of_free_zone = 0;
+                    zone best_zone=NULL;
+                    zone curr2 = curr;
+                    while(curr2 != NULL)
+                    {
+                        if(curr2->next != NULL)
+                        {
+                            size_of_free_zone = (curr2->next->addr - (curr2->addr + curr2->size));
+                            if(size_of_free_zone > 1)
+                            {
+                                if(size_of_best_segement == -1){
+                                    size_of_best_segement = size_of_free_zone;
+                                }
+                                if(size_of_free_zone >= size && size_of_free_zone < size_of_best_segement)
+                                {
+                                    size_of_best_segement = size_of_free_zone;
+                                    best_zone = curr2;
+                                }
+                            }
+                        }
+                        else
+                        { // End of the list
+                            if(size_of_best_segement != -1 && best_zone != NULL)
+                            {
+                                color("32");
+                                printf("Creation d'une zone memoire à la position : %d \n", best_zone->addr+best_zone->size+1);
+                                printf("Avec la taille de %d \n", best_zone->size);
+                                color("0");
+                                zone z = malloc(sizeof(zone));
+                                
+                                z->addr = best_zone->addr + best_zone->size;
+                                z->size = size;
+                                z->next = best_zone->next;
+                                
+                                best_zone->next = z;
+                                alloc = 1;
+                                
+                                addr_of_alloc = z->addr;
+                                m->free_size = m->free_size - (size);//Update of free size
+                                return addr_of_alloc;
+
+                            }
+                        }
+                        curr2 = curr2->next;
+                    }
+                }
+            }
+            if(curr->next == NULL && size <= m->free_size && alloc == 0 ) //Dernier maillon
+            {
+                if(size <= (m->size - (curr->addr + curr->size)))
+                {
+                    color("32");
+                    printf("Creation d'une zone memoire à la position : %d \n", curr->addr+curr->size+1);
+                    printf("\n Avec la taille de %d\n", size);
+                    color("0");
+                    zone z = malloc(sizeof(zone));
+                    
+                    z->addr = curr->addr + curr->size;
+                    z->size = size;
+                    z->next = NULL;
+                    curr->next = z;
+                    alloc = 1;
+                    
+                    addr_of_alloc = z->addr;
+                    m->free_size = m->free_size - (size); //Update of free size
+                    return addr_of_alloc;
+                }
+            }
+            if(curr->next == NULL && alloc ==0){
+                error("Allocation impossible en fin de chaine (memoire insufisante)");
+                return -1;
+            }
+            curr = curr->next;
+            more_2_of_alloc++;
+        }
+        if(alloc == 0){
+            error("Allocation impossible");
+            return -1;
+        }
+    }
+    return addr_of_alloc;
+}
+
+int mem_alloc_wf(memory *m, int size){
+    logs("WF Allocation");
+    
+    int addr_of_alloc = -1;
+    int more_2_of_alloc = 0;
+    int is_frag = memory_is_frag(m);
+    
+    if(m->free_size == m->size) //No allocation in memory
+    {
+        color("32");
+        printf("Creation d'une zone memoire à la position : %d \n", m->list->addr+m->list->size);
+        printf("Avec la taille de %d\n", size);
+        color("0");
+        zone z = malloc(sizeof(zone));
+        z->addr = 0;
+        z->size = size;
+        z->next = NULL;
+        m->list = z;
+        addr_of_alloc = z->addr;
+        
+        m->free_size = m->free_size - size; //Update of free size
+        return addr_of_alloc;
+    }
+    else
+    { //Memory have allocations
+        zone curr;
+        curr = m->list;
+        int alloc = 0;
+        while (alloc == 0)
+        {
+            if(curr->next != NULL && alloc == 0) //There is already memory zone allocated -> Allocation entre 2 maillions
+            {
+                if(is_frag == 1)
+                {
+                    int size_of_best_segement=-1;
+                    int size_of_free_zone = 0;
+                    zone best_zone=NULL;
+                    zone curr2 = curr;
+                    while(curr2 != NULL)
+                    {
+                        if(curr2->next != NULL)
+                        {
+                            size_of_free_zone = (curr2->next->addr - (curr2->addr + curr2->size));
+                            if(size_of_free_zone > 1)
+                            {
+                                if(size_of_best_segement == -1){
+                                    size_of_best_segement = size_of_free_zone;
+                                }
+                                if(size_of_free_zone >= size && size_of_free_zone > size_of_best_segement)
+                                {
+                                    size_of_best_segement = size_of_free_zone;
+                                    best_zone = curr2;
+                                }
+                            }
+                        }
+                        else
+                        { // End of the list
+                            if(size_of_best_segement != -1 && best_zone != NULL)
+                            {
+                                color("32");
+                                printf("Creation d'une zone memoire à la position : %d \n", best_zone->addr+best_zone->size+1);
+                                printf("Avec la taille de %d \n", best_zone->size);
+                                color("0");
+                                zone z = malloc(sizeof(zone));
+                                
+                                z->addr = best_zone->addr + best_zone->size;
+                                z->size = size;
+                                z->next = best_zone->next;
+                                
+                                best_zone->next = z;
+                                alloc = 1;
+                                
+                                addr_of_alloc = z->addr;
+                                m->free_size = m->free_size - (size);//Update of free size
+                                return addr_of_alloc;
+                                
+                            }
+                        }
+                        curr2 = curr2->next;
+                    }
+                }
+            }
+            if(curr->next == NULL && size <= m->free_size && alloc == 0 ) //Dernier maillon
+            {
+                if(size <= (m->size - (curr->addr + curr->size)))
+                {
+                    color("32");
+                    printf("Creation d'une zone memoire à la position : %d \n", curr->addr+curr->size+1);
+                    printf("\n Avec la taille de %d\n", size);
+                    color("0");
+                    zone z = malloc(sizeof(zone));
+                    
+                    z->addr = curr->addr + curr->size;
+                    z->size = size;
+                    z->next = NULL;
+                    curr->next = z;
+                    alloc = 1;
+                    
+                    addr_of_alloc = z->addr;
+                    m->free_size = m->free_size - (size); //Update of free size
+                    return addr_of_alloc;
+                }
+            }
+            if(curr->next == NULL && alloc ==0){
+                error("Allocation impossible en fin de chaine (memoire insufisante)");
+                return -1;
+            }
+            curr = curr->next;
+            more_2_of_alloc++;
+        }
+        if(alloc == 0){
+            error("Allocation impossible");
+            return -1;
+        }
+    }
+    return addr_of_alloc;
+}
+
+
 /* Return 0 if no alloc */
 /* return -1 if there is error */
 /* else return addr > 0 */
 int mem_alloc(memory *m, int size){
-    logs("Allocation");
-    
     if(m == NULL){
         error("Memory is initialised?");
         return -1;
@@ -410,13 +636,13 @@ int mem_alloc(memory *m, int size){
             return mem_alloc_ff(m,size);
             break;
         case BF: //1er plus petit segement dispo
-           
+            return mem_alloc_bf(m,size);
             break;
         case WF: //Plus gros segement à chaque fois
-            
+            return mem_alloc_wf(m,size);
             break;
         default:
-            error("ERROR WITH TYPE");
+            error("ERROR WITH TYPE OF MEMORY");
             break;
     }
     return 0;
@@ -459,7 +685,6 @@ int mem_defrag(memory *m){
                     if(curr2->next != NULL)
                     {
                         curr2->next->addr = curr2->next->addr - size_of_free_memory;
-                        //m->free_size++;
                     }
                     curr2 = curr2->next;
                 }
@@ -467,7 +692,6 @@ int mem_defrag(memory *m){
         }
         else{ //last zone
             curr->addr = curr->addr - size_of_free_memory;
-            //m->free_size++;
         }
         curr = curr ->next;
        
@@ -506,6 +730,35 @@ int memory_is_frag(const memory *m){
     return 0;
 }
 
+int number_of_fragment(const memory *m){
+    if(m == NULL){
+        error("Memory is initialised?");
+        return -1;
+    }
+    
+    int nb_of_fragment =0;
+    if(memory_is_frag(m)){
+        zone curr = m->list;
+        int size_of_free_memory=0;
+        
+        while(curr != NULL)
+        {
+            if(curr->next != NULL)
+            {
+                size_of_free_memory = (curr->next->addr - (curr->addr + curr->size)) ;
+                if(size_of_free_memory > 1) // s'il y'a un espace vide entre les deux zone memoire
+                {
+                    nb_of_fragment++;
+                }
+            }
+            curr = curr->next;
+        }
+        return nb_of_fragment;
+    }
+    
+    return 0; //not fragmented
+}
+
 /* Simulation of memory fragmentation */
 int mem_frag_simulation(memory *m){
     if(m == NULL){
@@ -513,7 +766,7 @@ int mem_frag_simulation(memory *m){
         return -1;
     }
 
-    for(int w=0; w<1; w++)
+    for(int w=0; w<100; w++)
     {
         int nb_of_alloc =50;
         int nb_of_dealloc = 10;
@@ -535,21 +788,14 @@ int mem_frag_simulation(memory *m){
                 }
             }
         }
-        mem_display(m);
-        
-        //Debug
-        for(int i=0;i<j;i++){
-            printf("|%d/@%d| ",i,addr_of_alloc[i]);
-        }
-        
         //Desalocation
         for(int i=0;i<nb_of_dealloc;i++){
             x = rand_a_b(0, j);
             printf("\nX : %d && ADDR : %d\n",x, addr_of_alloc[x]);
             mem_free_select(m, addr_of_alloc[x]);
         }
-        mem_display(m);
     }
+    mem_display(m);
     
     return 0;
 }
@@ -557,9 +803,34 @@ int mem_frag_simulation(memory *m){
 int main(int argc, const char * argv[]) {
     srand((int)time(NULL));
     
-    int choice,ret;
+    int choice = -1;
+    int ret;
     int size,id;
-    memory *m = mem_init(max_memory_size, FF); //init memory
+    
+    do{
+        printf("\n\n What mode do you want use for memory allocation ?\n");
+        printf("[0] First-Fit Allocation mode \n");
+        printf("[1] Best-Fit Allocation mode\n");
+        printf("[2] Worst-Fit Allocation mode\n");
+        ret = scanf ("%d", &choice);
+        scanf ("%*[^\n]");
+        getchar ();
+            printf("Choice1 : %d", choice);
+        
+        // Checking of the value
+        if (ret != 1){
+           choice = -1; //default
+        }
+        
+        if(choice < 0 || choice > 2){
+            choice = -1;
+        }
+            
+        printf("Choice2 : %d", choice);
+        
+    }while (choice == -1);
+    
+    memory *m = mem_init(max_memory_size, choice); //init memory
     
      do{
          printf("\n\nWhat do you want to do ?\n");
@@ -575,7 +846,6 @@ int main(int argc, const char * argv[]) {
          scanf ("%*[^\n]");
          getchar ();
          
-         // Checking of the value
          if (ret != 1)
              choice = -1; //default
          
