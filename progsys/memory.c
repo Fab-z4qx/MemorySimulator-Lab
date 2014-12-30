@@ -53,7 +53,7 @@ memory* mem_init(int size, enum TYPE t)
 }
 
 /* Function for free all block in memory */
-/* Param : memory *m $/
+/* Param : memory *m */
 /* return -1 if there is an error */
 /* return 0 if all is correct */
 int mem_free(memory *m){
@@ -84,7 +84,7 @@ int mem_free(memory *m){
 }
 
 /* For remove selected block in memory */
-/* param : the memory *m and addr of block wich you want remove
+/* param : the memory *m and addr of block wich you want remove */
 /* return -1 if block doesn't exist of if there is an error */
 /* return 0 if block has free */
 int mem_free_select(memory *m, int addr){
