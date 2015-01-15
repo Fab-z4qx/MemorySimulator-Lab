@@ -11,17 +11,21 @@
 /* Display log message in console with green color */
 /* get message to display */
 void logs(char *msg){
+    if(LOG==1){
     color("32");
     printf("[LOG] %s \n",msg);
     color("0");
+    }
 }
 
 /* Display error message in console with green color */
 /* get message to display */
 void error(char *msg){
+    if(LOG==1){
     color("31");
     printf("[ERROR] %s \n", msg);
     color("0");
+    }
 }
 
 

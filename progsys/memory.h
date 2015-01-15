@@ -18,6 +18,7 @@
 #include "utils.h"
 
 #define max_memory_size 5000
+#define LOG 1
 
 /****** Memory action ******/
 memory* mem_init(int size, enum TYPE t);

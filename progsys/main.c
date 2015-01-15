@@ -11,6 +11,22 @@
 
 #include "main.h"
 
+/* Wrapper For simulation */
+/* Calcule of avrage for simulation */
+int simulation(memory *m){
+    
+    int nb_of_simulation = 1;
+    double moyenne = 0;
+    for (int i=0; i<nb_of_simulation; i++){
+        mem_frag_simulation(m);
+        moyenne += number_of_fragment(m);
+        //mem_free(m);
+    }
+    printf("Moyenne de fragment : %lf",moyenne/nb_of_simulation);
+    
+    return 0;
+}
+
 int main(int argc, const char * argv[]) {
     srand((int)time(NULL));
     
@@ -26,7 +42,6 @@ int main(int argc, const char * argv[]) {
         ret = scanf ("%d", &choice);
         scanf ("%*[^\n]");
         getchar ();
-            printf("Choice1 : %d", choice);
         
         // Checking of the value
         if (ret != 1){
@@ -36,8 +51,6 @@ int main(int argc, const char * argv[]) {
         if(choice < 0 || choice > 2){
             choice = -1;
         }
-            
-        printf("Choice2 : %d", choice);
         
     }while (choice == -1);
     
@@ -81,7 +94,7 @@ int main(int argc, const char * argv[]) {
                  mem_display(m);
                  break;
              case FRAG:
-                 mem_frag_simulation(m);
+                 simulation(m);
                  break;
              case DEFRAG:
                  mem_dfrag(m);

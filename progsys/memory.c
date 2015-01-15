@@ -100,7 +100,6 @@ int mem_free_select(memory *m, int addr){
         return -1;
     }
     
-    printf("\n Addr to remove is : %d", addr);
     int desalloc = 0;//flag
     
     zone curr = m->list;
@@ -685,6 +684,7 @@ int number_of_fragment(const memory *m){
     return 0; //not fragmented
 }
 
+
 /* Simulation of memory fragmentation */
 /* Get only memory for create the simulation */
 /* Return -1 if error */
@@ -695,10 +695,10 @@ int mem_frag_simulation(memory *m){
         return -1;
     }
     
-    for(int w=0; w<100; w++)
+    for(int w=0; w<1000; w++)
     {
         int nb_of_alloc =50;
-        int nb_of_dealloc = 10;
+        int nb_of_dealloc = 20;
         int a=10;
         int b=(m->size/8); //Taille compris entre a et b
         int *t=init_sans_doublons(a,b);
@@ -720,11 +720,11 @@ int mem_frag_simulation(memory *m){
         //Desalocation
         for(int i=0;i<nb_of_dealloc;i++){
             x = rand_a_b(0, j);
-            printf("\nX : %d && ADDR : %d\n",x, addr_of_alloc[x]);
+            //printf("\nX : %d && ADDR : %d\n",x, addr_of_alloc[x]);
             mem_free_select(m, addr_of_alloc[x]);
         }
     }
-    mem_display(m);
+    //mem_display(m);
     
     return 0;
 }

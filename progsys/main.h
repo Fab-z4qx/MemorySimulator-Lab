@@ -17,4 +17,6 @@
 
 enum {ALLOCATE, FREESELECT, FREE, VIEW, FRAG, DEFRAG, QUIT};
 
+int simulation(memory *m);
+
 #endif
